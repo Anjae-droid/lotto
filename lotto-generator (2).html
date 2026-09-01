@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>로또 번호 생성기 · 6/45</title>
+<style>
+  :root{
+    --paper:#FFFDF8;
+    --ink:#17171A;
+    --ink-soft:#6B6A66;
+    --rule:#DCD8CC;
+    --slip:#EE4B4B;
+    --slip-line:#F6B9B9;
+    --slip-band:#F79A9A;
+    --y:#FBC400; --b:#69C8F2; --r:#FF7272; --g:#AAAAAA; --gr:#B0D840;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    padding:18px 14px 40px;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,-apple-system,sans-serif;
+    line-height:1.5;
+  }
+  .wrap{max-width:560px;margin:0 auto;}
+
+  header{border-bottom:2px solid var(--ink);padding-bottom:11px;margin-bottom:16px;}
+  h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-0.03em;}
+  header p{margin:4px 0 0;color:var(--ink-soft);font-size:13px;}
+
+  .label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:7px;}
+
+  .games{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:6px;
+    margin-bottom:12px;
+  }
+  .games button{
+    display:block;width:100%;height:50px;
+    border:1px solid var(--rule);background:#fff;border-radius:10px;
+    font-family:inherit;font-weight:700;font-size:17px;color:var(--ink);
+    cursor:pointer;padding:0;
+  }
+  .games button.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  .draw{
+    display:block;width:100%;height:54px;margin-bottom:22px;
+    background:var(--slip);color:#fff;border:none;border-radius:12px;
+    font-family:inherit;font-weight:800;font-size:18px;cursor:pointer;padding:0;
+  }
+  .draw:active{opacity:.85;}
+  button:focus-visible{outline:3px solid #0A66FF;outline-offset:2px;}
+
+  /* 결과 */
+  #results{margin-bottom:24px;}
+  .row{
+    display:flex;align-items:center;gap:9px;
+    padding:10px 11px;margin-bottom:9px;
+    border:1px solid var(--rule);border-radius:12px;background:#fff;
+  }
+  .tag{
+    flex:0 0 auto;width:23px;height:23px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:800;background:var(--ink);color:#fff;
+  }
+  .balls{flex:1 1 auto;display:flex;gap:5px;justify-content:space-between;}
+  .ball{
+    flex:1 1 0;min-width:0;max-width:44px;height:40px;border-radius:999px;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:16px;color:#fff;
+  }
+  .ball.pop{animation:pop .14s ease-out both;}
+  @keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+  .c1{background:var(--y);color:#3B2B00;}
+  .c2{background:var(--b);color:#04364C;}
+  .c3{background:var(--r);}
+  .c4{background:var(--g);}
+  .c5{background:var(--gr);color:#20340B;}
+  .copy{
+    flex:0 0 auto;width:36px;height:36px;padding:0;
+    border:1px solid var(--rule);background:#fff;border-radius:9px;
+    font-family:inherit;font-size:12px;color:var(--ink-soft);cursor:pointer;
+  }
+  .empty{
+    padding:20px 14px;border:1px dashed var(--rule);border-radius:12px;
+    color:var(--ink-soft);font-size:14px;text-align:center;
+  }
+
+  /* 마킹 용지 */
+  .sheet h2{margin:0 0 3px;font-size:15px;font-weight:800;}
+  .sheet .hint{margin:0 0 10px;color:var(--ink-soft);font-size:12.5px;}
+  .strip{
+    display:flex;gap:9px;overflow-x:auto;padding-bottom:8px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .panel{
+    flex:0 0 auto;width:246px;
+    background:#fff;border:1px solid var(--slip-line);border-radius:4px;padding:8px;
+  }
+  .strip.single .panel{width:100%;}
+  .panel-head{display:flex;gap:4px;margin-bottom:7px;}
+  .panel-head .letter{
+    flex:0 0 auto;width:28px;height:24px;
+    border:1px solid var(--slip-line);border-radius:3px;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:14px;color:var(--slip);
+  }
+  .panel-head .band{
+    flex:1 1 auto;height:24px;background:var(--slip-band);color:#fff;border-radius:3px;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:13px;
+  }
+  .slip-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .slip-cell{
+    height:28px;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--slip-line);border-radius:3px;
+    font-size:11.5px;font-weight:600;color:var(--slip);
+  }
+  .slip-cell.on{background:var(--slip);border-color:var(--slip);color:#fff;font-weight:800;}
+
+  @media (min-width:600px){
+    h1{font-size:34px;}
+    .strip{overflow-x:visible;}
+    .panel{flex:1 1 0;width:auto;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .ball.pop{animation:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>로또 번호 생성기</h1>
+    <p>1부터 45까지 중에서 중복 없이 6개를 뽑습니다.</p>
+  </header>
+
+  <span class="label">게임 수</span>
+  <div class="games" id="gameBtns">
+    <button type="button" class="on" data-n="1">1</button>
+    <button type="button" data-n="2">2</button>
+    <button type="button" data-n="3">3</button>
+    <button type="button" data-n="4">4</button>
+    <button type="button" data-n="5">5</button>
+  </div>
+
+  <button type="button" class="draw" id="drawBtn">번호 뽑기</button>
+
+  <div id="results">
+    <div class="empty">아직 뽑은 번호가 없습니다.</div>
+  </div>
+
+  <section class="sheet">
+    <h2>마킹 용지</h2>
+    <p class="hint" id="sheetHint">번호를 뽑으면 용지에 표시됩니다.</p>
+    <div class="strip" id="strip"></div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  var LABELS = ['A','B','C','D','E'];
+  var gameCount = 1;
+
+  var gameBtns = document.getElementById('gameBtns');
+  var drawBtn  = document.getElementById('drawBtn');
+  var results  = document.getElementById('results');
+  var strip    = document.getElementById('strip');
+  var hint     = document.getElementById('sheetHint');
+
+  var btns = gameBtns.getElementsByTagName('button');
+  for (var i = 0; i < btns.length; i++) {
+    (function(btn){
+      btn.onclick = function(){
+        gameCount = parseInt(btn.getAttribute('data-n'), 10);
+        for (var j = 0; j < btns.length; j++) {
+          btns[j].className = (btns[j] === btn) ? 'on' : '';
+        }
+      };
+    })(btns[i]);
+  }
+
+  // 원본 로직: set에 6개가 찰 때까지 난수 추가
+  function drawOne(){
+    var lotto = {};
+    var count = 0;
+    while (count < 6) {
+      var n = Math.floor(Math.random() * 45) + 1;
+      if (!lotto[n]) { lotto[n] = true; count++; }
+    }
+    var out = [];
+    for (var k in lotto) out.push(parseInt(k, 10));
+    return out.sort(function(a, b){ return a - b; });
+  }
+
+  function colorClass(n){
+    if (n <= 10) return 'c1';
+    if (n <= 20) return 'c2';
+    if (n <= 30) return 'c3';
+    if (n <= 40) return 'c4';
+    return 'c5';
+  }
+
+  function copyText(text, btn){
+    var done = function(){
+      var old = btn.innerHTML;
+      btn.innerHTML = '완료';
+      setTimeout(function(){ btn.innerHTML = old; }, 1200);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, function(){ fallback(); });
+    } else {
+      fallback();
+    }
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  }
+
+  function renderResults(games){
+    results.innerHTML = '';
+    var step = 0;
+
+    for (var gi = 0; gi < games.length; gi++) {
+      (function(nums, gi){
+        var row = document.createElement('div');
+        row.className = 'row';
+
+        var tag = document.createElement('div');
+        tag.className = 'tag';
+        tag.innerHTML = LABELS[gi];
+        row.appendChild(tag);
+
+        var balls = document.createElement('div');
+        balls.className = 'balls';
+        for (var i = 0; i < nums.length; i++) {
+          var el = document.createElement('div');
+          el.className = 'ball pop ' + colorClass(nums[i]);
+          el.innerHTML = nums[i];
+          step += 25;
+          el.style.animationDelay = step + 'ms';
+          balls.appendChild(el);
+        }
+        row.appendChild(balls);
+
+        var copy = document.createElement('button');
+        copy.type = 'button';
+        copy.className = 'copy';
+        copy.innerHTML = '복사';
+        copy.onclick = function(){ copyText(nums.join(', '), copy); };
+        row.appendChild(copy);
+
+        results.appendChild(row);
+      })(games[gi], gi);
+    }
+  }
+
+  // 실제 용지 형태의 패널을 왼쪽부터 게임 수만큼 생성
+  function renderSheet(games){
+    strip.innerHTML = '';
+    strip.className = games.length === 1 ? 'strip single' : 'strip';
+
+    for (var gi = 0; gi < games.length; gi++) {
+      var picked = {};
+      for (var i = 0; i < games[gi].length; i++) picked[games[gi][i]] = true;
+
+      var panel = document.createElement('div');
+      panel.className = 'panel';
+
+      var head = document.createElement('div');
+      head.className = 'panel-head';
+      head.innerHTML = '<div class="letter">' + LABELS[gi] + '</div>' +
+                       '<div class="band">1,000원</div>';
+      panel.appendChild(head);
+
+      var g = document.createElement('div');
+      g.className = 'slip-grid';
+      for (var n = 1; n <= 45; n++) {
+        var cell = document.createElement('div');
+        cell.className = picked[n] ? 'slip-cell on' : 'slip-cell';
+        cell.innerHTML = n;
+        g.appendChild(cell);
+      }
+      panel.appendChild(g);
+
+      strip.appendChild(panel);
+    }
+
+    hint.innerHTML = games.length > 1
+      ? '왼쪽부터 ' + LABELS.slice(0, games.length).join('·') + ' 게임입니다. 옆으로 넘겨 보세요.'
+      : 'A 게임입니다.';
+    strip.scrollLeft = 0;
+  }
+
+  drawBtn.onclick = function(){
+    var games = [];
+    for (var i = 0; i < gameCount; i++) games.push(drawOne());
+    renderResults(games);
+    renderSheet(games);
+    drawBtn.innerHTML = '다시 뽑기';
+  };
+})();
+</script>
+</body>
+</html>
